@@ -11,7 +11,7 @@ classdef RedisClient
         end
         function r = ping(obj)
         end
-        function r = send(obj, varargin)
+        function r = cmd(obj, varargin)
         end
         function r = set(obj, varargin)
         end
