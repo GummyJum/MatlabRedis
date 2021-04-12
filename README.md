@@ -3,7 +3,7 @@ Pure Matlab Redis interface for Matlab>=2014B
 
 ## API:
 ```Matlab
-r = redis.init(<host>, <port>, ['password', password=''], ['db', db=0])
+r = RedisClient(<host>, <port>, ['password', password=''], ['db', db=0])
 >>
 r.ping
 >>
