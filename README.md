@@ -2,16 +2,18 @@
 Pure Matlab Redis interface for Matlab>=2014B
 
 ## API:
-`r = redis.init(<host>, <port>, ['password', password=''], ['db', db=0]);`
-
-`r.ping;`
-
-`r.send(<cmd>, <args...>);`
-
-`r.set('tmp', 1);`
-
-`tmp = r.get('tmp');`
-
+```Matlab
+r = redis.init(<host>, <port>, ['password', password=''], ['db', db=0])
+>>
+r.ping
+>>
+r.send(<cmd>, <args...>)
+>>
+r.set('tmp', 1)
+>>
+tmp = r.get('tmp')
+>>
+```
 
 ## Related Projects
 There are three similar packages out there that we have seen
