@@ -24,3 +24,8 @@ There are three similar packages out there that we have seen
 of those the former two packages are based on the Hiredis library and the third is a Matlab implementation of the Hiredis library interface.
 
 This project implements an object-like interface for Redis without any other requirement or setup other then matlab itself.
+
+## References
+
+- https://redis.io/topics/protocol
+- https://www.compose.com/articles/how-to-talk-raw-redis/
