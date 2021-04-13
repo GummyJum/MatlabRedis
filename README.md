@@ -16,16 +16,18 @@ tmp = r.get('tmp')
 ```
 
 ## Related Projects
-There are three similar packages out there that we have seen
-- https://github.com/svdev/redis-matlab-mex
-- https://github.com/markuman/go-redis
-- https://github.com/dantswain/redis-matlab
+There are few similar packages
+- [GNU Octave redis client (go-redis - the official redis matlab/octave interface)](https://github.com/markuman/go-redis)
+- [redis-mex (similar to the above but has different interface)](https://github.com/svdev/redis-matlab-mex)
+- [Redis Matlab (pure Matlab implementation)](https://github.com/dantswain/redis-matlab)
 
-of those the former two packages are based on the Hiredis library and the third is a Matlab implementation of the Hiredis library interface.
+The former two packages are based on the Hiredis library and require compilation. 
+The third is a Matlab implementation is not supported on newer versions of Matlab (>=2014B) 
+while also is not fully consistent with the RESP protocol.
 
-This project implements an object-like interface for Redis without any other requirement or setup other then matlab itself.
+This project implements an intuitive object-like interface for Redis without any other requirement or setup other then matlab itself.
 
 ## References
 
-- https://redis.io/topics/protocol
-- https://www.compose.com/articles/how-to-talk-raw-redis/
+- [Redis Protocol specification](https://redis.io/topics/protocol)
+- [How to talk raw Redis](https://www.compose.com/articles/how-to-talk-raw-redis/)
