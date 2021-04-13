@@ -1,18 +1,55 @@
 # MatlabRedis
 Pure Matlab Redis interface for Matlab>=2014B
 
-## API:
+## Example
+```Matlab
+>> r = RedisClient('localhost', 6379, 'password', 'foobared')
+
+r = 
+
+  RedisClient with properties:
+
+           host: 'localhost'
+           port: 6379
+       password: 'foobared'
+             db: 0
+         socket: [1×1 tcpclient]
+    recv_buffer: ''
+        timeout: 2
+    buffer_wait: 1.0000e-03
+           CRNL: '←↵'
+
+>> r.set('var', 'value !"#$%&''()*+,-./:;<=>?@[\]^_`{|}~')
+
+ans =
+
+    'OK'
+
+>> r.get('var')
+
+ans =
+
+    'value !"#$%&'()*+,-./:;<=>?@[\]^_`{|}~'
+
+>> r.send('incr', 'tmp')
+
+ans =
+
+     1
+
+>> r.send('incr', 'tmp')
+
+ans =
+
+     2
+```
+## API
 ```Matlab
 r = RedisClient(<host>, <port>, ['password', password=''], ['db', db=0])
->>
 r.ping
->>
-r.send(<cmd>, <args...>)
->>
-r.set('tmp', 1)
->>
-tmp = r.get('tmp')
->>
+r.send(<cmd>[, <arg>]*)
+r.set(<var>, <value>)
+value = r.get(<var>)
 ```
 
 ## Related Projects

@@ -63,7 +63,6 @@ classdef RedisClient < handle
             if isempty(obj.recv_buffer)
                 obj.dump_recv_buffer;
             end
-            
             lines = strsplit(obj.recv_buffer, obj.CRNL);
             
             while ~isempty(lines) && isempty(lines{1})
@@ -114,11 +113,11 @@ classdef RedisClient < handle
         end
         
         function r = set(obj, varargin)
-            r = obj.send('SET', varargin);
+            r = obj.send('SET', varargin{:});
         end
         
         function r = get(obj, varargin)
-            r = obj.send('GET', varargin);
+            r = obj.send('GET', varargin{:});
         end
    end
 end
