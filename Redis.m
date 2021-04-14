@@ -30,28 +30,18 @@ classdef Redis < handle
         
         function cmd_async(obj, varargin)
             buff = sprintf('*%d\r\n', numel(varargin));
-            args = cellfun(@(x) {[sprintf('$%d\r\n', numel(x)), to_redis_string(x)]}, varargin);
+            redis_strings = cellfun(@(x)  to_redis_string(x), varargin, 'UniformOutput', false);
+            args = cellfun(@(x) {[sprintf('$%d\r\n', numel(x)), x]}, redis_strings);
             buff = [buff, strjoin(args, obj.CRNL), obj.CRNL];
             obj.socket.write(uint8(buff));
             
-            function redis_str = to_redis_string(data)
-                if isstring(data)
-                    data = char(data);
+            function redis_str = to_redis_string(redis_str)
+                if isstring(redis_str)
+                    redis_str = char(redis_str);
                 end
-                if isnumeric(data)
-                    data = num2str(data);
+                if isnumeric(redis_str)
+                    redis_str = num2str(redis_str);
                 end
-                special = '"\';
-                redis_str = '';
-                for l = char(data)
-                    if ~isempty(find(special == l, 1))
-                        redis_str = [redis_str, '\', l];
-                    else
-                        redis_str = [redis_str, l];
-                    end
-                end
-                redis_str(redis_str == char(13)) = ' ';
-                redis_str(redis_str == newline) = ' ';
             end
         end
         
