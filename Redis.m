@@ -1190,5 +1190,15 @@ classdef Redis < handle
             % Incrementally iterate hash fields and associated values
             output = obj.cmd('HSCAN', key, cursor, varargin);
         end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%% New Functionality %%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function output = list2json(obj, list_name)
+            % Get a list from redis in json format.
+            lua_code = 'return cjson.encode(redis.call(''LRANGE'', KEYS[1], 0, -1));';
+            output = obj.eval(lua_code, 1, list_name);
+        end
     end
 end
