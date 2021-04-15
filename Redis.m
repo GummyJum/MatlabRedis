@@ -5,34 +5,17 @@ classdef Redis < handle
         password char = ''
         db {mustBeNumeric} = 0
         socket = []
-        recv_buffer = []
         timeout = 2
-        buffer_wait = 0.001
-        CRNL = sprintf('\r\n')
+        read_wait = 0.001
+        terminator = sprintf('\r\n')
     end
     methods (Access=private)
-        function dump_recv_buffer(obj)
-            buff = [];
-            total_wait = 0;
-            while total_wait < obj.timeout
-                pause(obj.buffer_wait);
-                while obj.socket.BytesAvailable
-                    buff = [buff, obj.socket.read];
-                end
-                if ~isempty(buff)
-                    obj.recv_buffer = [obj.recv_buffer, char(buff)];
-                    return
-                end
-                total_wait = total_wait + obj.buffer_wait;
-            end
-            warning('redis timeout reached without any answer');
-        end
-        
-        function cmd_async(obj, varargin)
+                
+        function send_command(obj, varargin)
             buff = sprintf('*%d\r\n', numel(varargin));
             redis_strings = cellfun(@(x)  to_redis_string(x), varargin, 'UniformOutput', false);
             args = cellfun(@(x) {[sprintf('$%d\r\n', numel(x)), x]}, redis_strings);
-            buff = [buff, strjoin(args, obj.CRNL), obj.CRNL];
+            buff = [buff, strjoin(args, obj.terminator), obj.terminator];
             obj.socket.write(uint8(buff));
             
             function redis_str = to_redis_string(redis_str)
@@ -43,57 +26,66 @@ classdef Redis < handle
                     redis_str = num2str(redis_str);
                 end
             end
+        end        
+        
+        function line = socket_readline(obj)            
+            line = [];
+            total_wait = 0;
+            while total_wait < obj.timeout
+                pause(obj.read_wait);
+                while obj.socket.BytesAvailable
+                    line = [line, char(obj.socket.read(1))];
+                    if length(line) >= 2 && strcmp(line((end-1):end), obj.terminator)
+                        break
+                    end
+                end
+                if ~isempty(line)
+                    return
+                end
+                total_wait = total_wait + obj.read_wait;
+            end
+            warning('redis timeout reached without any answer');
         end
         
-        function [r, status] = recv_async(obj, varargin)
+        function response = read_response(obj)
             % we have 5 possible responses first char +-:$*
-            r = [];
-            status = 0;
-            if isempty(obj.recv_buffer)
-                obj.dump_recv_buffer;
-            end
-            lines = strsplit(obj.recv_buffer, obj.CRNL);
+            raw = strip(obj.socket_readline);
             
-            while ~isempty(lines) && isempty(lines{1})
-                lines = lines(2:end);
-            end
-            if isempty(lines)
-                return;
+            if isempty(raw)
+                error('ConnectionError(SERVER_CLOSED_CONNECTION_ERROR)');
             end
             
-            if any(lines{1}(1) == '+-:')
-                r = lines{1}(2:end);
-                if lines{1}(1) == '-'
-                    status = 1;
-                end
-                if lines{1}(1) == ':'
-                    r = str2double(r);
-                end
-                obj.recv_buffer = strjoin(lines(2:end), obj.CRNL);
+            prefix = raw(1);
+            response = raw(2:end);
+            
+            if all(prefix ~= '+-:$*')
+                error('InvalidResponse("Protocol Error: %s")', raw);
+            end
+            
+            if prefix == '-'
                 return
-            end
-            
-            if lines{1}(1) == '$'
-                assert(length(lines) >= 2, 'data was not received as expected');
-                r = lines{2};
-                obj.recv_buffer = strjoin(lines(3:end), obj.CRNL);
-                return
-            end
-            
-            if lines{1}(1) == '*'
-                n = str2double(lines{1}(2:end));
-                obj.recv_buffer = strjoin(lines(2:end), obj.CRNL);
-                r = cell(1, n);
-                for ind = 1:n
-                    r{ind} = obj.recv_async;
+            elseif prefix == '+'
+%                 PASS
+            elseif prefix == ':'
+                response = int64(str2double(response));   
+            elseif prefix == '$'
+                len = int32(str2double(response));                
+                if len == -1
+                    response = [];
+                    return
                 end
-                return
-            end
-            
-            status = 1;
-            r = obj.recv_buffer;
-            obj.recv_buffer = [];
-            warning('could not parse RESP return raw response');
+                response = strip(char(obj.socket.read(len+2)));             
+            elseif prefix == '*'
+                len = int32(str2double(response));                
+                if len == -1
+                    response = [];
+                    return
+                end
+                response = cell(1, len);
+                for ind = 1:len
+                    response{ind} = obj.read_response;
+                end                
+            end            
         end
     end
     
@@ -116,12 +108,12 @@ classdef Redis < handle
             end
         end
         
-        function [r, status] = cmd(obj, varargin)
+        function response = cmd(obj, varargin)
             if iscell(varargin(end))
                 varargin = [varargin(1:end-1) varargin{end}];
             end
-            obj.cmd_async(varargin{:});
-            [r, status] = obj.recv_async(varargin{:});
+            obj.send_command(varargin{:});
+            response = obj.read_response;
         end
         function output = append(obj, key, value, varargin)
             % APPEND key value
