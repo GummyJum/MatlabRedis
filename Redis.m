@@ -4,12 +4,16 @@ classdef Redis < handle
         port {mustBeNumeric}
         password char = ''
         db {mustBeNumeric} = 0
-        socket = []
-        recv_buffer = []
         timeout = 2
         buffer_wait = 0.001
-        CRNL = sprintf('\r\n')
     end
+    
+    properties (Access=private)
+        CRNL = sprintf('\r\n')
+        socket = []
+        recv_buffer = []        
+    end
+    
     methods (Access=private)
         function dump_recv_buffer(obj)
             buff = [];
