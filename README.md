@@ -3,12 +3,9 @@ Pure Matlab Redis interface for Matlab>=2014B
 
 ## Example
 ```Matlab
->> r = RedisClient('localhost', 6379, 'password', 'foobared')
-
+>> r = Redis('localhost', 6379, 'password', 'foobared')
 r = 
-
   RedisClient with properties:
-
            host: 'localhost'
            port: 6379
        password: 'foobared'
@@ -20,32 +17,26 @@ r =
            CRNL: '←↵'
 
 >> r.set('var', 'value !"#$%&()*+,-./:;<=>?@[\]^_`{|}~')
-
 ans =
-
     'OK'
 
 >> r.get('var')
-
 ans =
-
     'value !"#$%&()*+,-./:;<=>?@[\]^_`{|}~'
 
->> r.send('incr', 'tmp')
-
+>> r.cmd('incr', 'tmp')
 ans =
-
      1
 
->> r.send('incr', 'tmp')
-
+>> r.cmd('incr tmp')
 ans =
-
      2
+
 ```
+  
 ## API
 ```Matlab
-r = RedisClient(<host>, <port>, ['password', password=''], ['db', db=0])
+r = Redis(<host>, <port>, ['password', password=''], ['db', db=0])
 r.ping
 r.send(<cmd>[, <arg>]*)
 r.set(<var>, <value>)
