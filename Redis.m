@@ -4,11 +4,15 @@ classdef Redis < handle
         port {mustBeNumeric}
         password char = ''
         db {mustBeNumeric} = 0
-        socket = []
         timeout = 2
         read_wait = 0.001
-        terminator = sprintf('\r\n')
     end
+    
+    properties (Access=private)
+        terminator = sprintf('\r\n')
+        socket = []
+    end
+    
     methods (Access=private)
                 
         function send_command(obj, varargin)
@@ -1177,6 +1181,16 @@ classdef Redis < handle
             % HSCAN key cursor [MATCH pattern] [COUNT count]
             % Incrementally iterate hash fields and associated values
             output = obj.cmd('HSCAN', key, cursor, varargin);
+        end
+        
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%% New Functionality %%%%%%%%%%%%%%%%%%%%%%%%%%
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        
+        function output = list2json(obj, list_name)
+            % Get a list from redis in json format.
+            lua_code = 'return cjson.encode(redis.call(''LRANGE'', KEYS[1], 0, -1));';
+            output = obj.eval(lua_code, 1, list_name);
         end
     end
 end
