@@ -131,7 +131,15 @@ classdef Redis < handle
             obj.host = host;
             obj.port = port;
             
-            obj.socket = tcpclient(obj.host, obj.port);
+            try 
+                obj.socket = tcpclient(obj.host, obj.port);
+            catch err
+                if strcmp(err.identifier, 'MATLAB:networklib:tcpclient:cannotCreateObject')
+                    error('Unable to connect to Redis')
+                else
+                    error(err)
+                end
+            end
             
             ind = find(strcmpi('password', varargin), 1);
             if ~isempty(ind)
