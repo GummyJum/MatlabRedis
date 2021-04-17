@@ -14,7 +14,7 @@ classdef Redis < handle
     end
     
     methods (Access=private)
-                
+        
         function send_command(obj, varargin)
             buff = sprintf('*%d\r\n', numel(varargin));
             redis_strings = cellfun(@(x)  to_redis_string(x), varargin, 'UniformOutput', false);
@@ -32,7 +32,7 @@ classdef Redis < handle
             end
         end        
         
-        function line = socket_readline(obj)            
+        function line = socket_readline(obj)
             line = [];
             total_wait = 0;
             while total_wait < obj.timeout
@@ -69,18 +69,18 @@ classdef Redis < handle
             if prefix == '-'
                 return
             elseif prefix == '+'
-%                 PASS
+                % PASS
             elseif prefix == ':'
-                response = int64(str2double(response));   
+                response = int64(str2double(response));
             elseif prefix == '$'
-                len = int32(str2double(response));                
+                len = int32(str2double(response));
                 if len == -1
                     response = [];
                     return
                 end
-                response = strip(char(obj.socket.read(len+2)));             
+                response = strip(char(obj.socket.read(len+2)));
             elseif prefix == '*'
-                len = int32(str2double(response));                
+                len = int32(str2double(response));
                 if len == -1
                     response = [];
                     return
@@ -88,8 +88,8 @@ classdef Redis < handle
                 response = cell(1, len);
                 for ind = 1:len
                     response{ind} = obj.read_response;
-                end                
-            end            
+                end
+            end
         end
     end
     
