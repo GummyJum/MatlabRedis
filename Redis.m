@@ -84,6 +84,7 @@ classdef Redis < handle
             socket_line = obj.socket_readline;
             if isempty(socket_line)
                 response = '';
+                return
             end
             raw = strip(socket_line);
             
