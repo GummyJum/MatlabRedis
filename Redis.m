@@ -13,6 +13,32 @@ classdef Redis < handle
         socket = []
     end
     
+    methods (Access = private, Static)
+        function hashStr = sha1(str)
+            % Main class of interest:    System.Security.Cryptography.HashAlgorithm
+            % Create any specified cryptographic hasher.
+            % Supported string args include 'MD5', 'SHA1', 'SHA256', 'SHA384', 'SHA512'.
+            hasher = System.Security.Cryptography.HashAlgorithm.Create('SHA1');
+            
+            % Convert the char string to uint8 type & run it through the hasher
+            hash_byte = hasher.ComputeHash( uint8(str) );
+            
+            % Convert the System.Byte class to MATLAB 1xN uint8 number array by typecasting.
+            hash_uint8 = uint8( hash_byte );
+            
+            % Convert uint8 to a Nx2 char array of HEX values
+            hash_hex = dec2hex(hash_uint8);
+            
+            % FINALLY, convert the Nx2 hex char array to a 1x2N format
+            % Example Result:    '12582D...'
+            hashStr = str([]);
+            nBytes = length(hash_hex);
+            for k=1:nBytes
+                hashStr(end+1:end+2) = hash_hex(k,:);
+            end
+            hashStr = lower(hashStr);
+        end
+    end
     methods (Access=private)
         
         function send_command(obj, varargin)
@@ -31,7 +57,8 @@ classdef Redis < handle
                     redis_str = num2str(redis_str);
                 end
             end
-        end        
+            
+        end
         
         function line = socket_readline(obj)
             line = [];
@@ -324,16 +351,28 @@ classdef Redis < handle
             output = obj.cmd('ECHO', message, varargin);
         end
         
-        function output = eval(obj, script, numkeys, key, varargin)
+        function output = eval(obj, script, numkeys, varargin)
             % EVAL script numkeys key [key ...] arg [arg ...]
             % Execute a Lua script server side
-            output = obj.cmd('EVAL', script, numkeys, key, varargin);
+            if numel(script) < 30
+                output = obj.cmd('EVAL', script, numkeys, varargin);
+            else
+                % Use Redis scripts bank
+                script_sha1 = obj.sha1(script);
+                output = obj.evalsha(script_sha1, numkeys, varargin);
+                if strcmp(output, 'NOSCRIPT No matching script. Please use EVAL.')
+                    if ~strcmp(obj.script('load', script), script_sha1)
+                        error('unexpected sha');
+                    end
+                    output = obj.evalsha(script_sha1, numkeys, varargin);
+                end
+            end
         end
         
-        function output = evalsha(obj, sha1, numkeys, key, varargin)
+        function output = evalsha(obj, sha1, numkeys, varargin)
             % EVALSHA sha1 numkeys key [key ...] arg [arg ...]
             % Execute a Lua script server side
-            output = obj.cmd('EVALSHA', sha1, numkeys, key, varargin);
+            output = obj.cmd('EVALSHA', sha1, numkeys, varargin);
         end
         
         function output = exec(obj, varargin)
