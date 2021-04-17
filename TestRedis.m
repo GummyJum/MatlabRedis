@@ -42,5 +42,15 @@ classdef TestRedis < matlab.unittest.TestCase
             testCase.verifyEqual(v{2}, '35');
             testCase.verifyEqual(v{3}, 'v a\"\nl\ue"C');
         end
+        function test_multi(testCase)
+            testCase.redis_connection.multi();
+            testCase.redis_connection.set('x', 2);
+            testCase.redis_connection.incr('x');
+            Output = testCase.redis_connection.exec;
+            testCase.verifyEqual(Output{1}, 'OK');
+            testCase.verifyEqual(Output{2}, '3');
+            Output = testCase.redis_connection.incr('x');
+            testCase.verifyEqual(Output, '4');
+        end
     end
 end

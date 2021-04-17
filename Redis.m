@@ -99,7 +99,6 @@ classdef Redis < handle
             elseif prefix == '+'
                 % PASS
             elseif prefix == ':'
-                response = int64(str2double(response));
             elseif prefix == '$'
                 len = int32(str2double(response));
                 if len == -1
