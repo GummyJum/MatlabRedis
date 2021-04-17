@@ -18,6 +18,7 @@ classdef Redis < handle
         function send_command(obj, varargin)
             buff = sprintf('*%d\r\n', numel(varargin));
             redis_strings = cellfun(@(x)  to_redis_string(x), varargin, 'UniformOutput', false);
+            redis_strings(cellfun(@isempty, redis_strings)) = [];
             args = cellfun(@(x) {[sprintf('$%d\r\n', numel(x)), x]}, redis_strings);
             buff = [buff, strjoin(args, obj.terminator), obj.terminator];
             obj.socket.write(uint8(buff));
@@ -113,9 +114,17 @@ classdef Redis < handle
         end
         
         function response = cmd(obj, varargin)
-            if iscell(varargin(end))
-                varargin = [varargin(1:end-1) varargin{end}];
+            function unpacked_cells = unpack_cells(cells)
+                unpacked_cells = [];
+                for cell_idx = 1:numel(cells)
+                    if iscell(cells{cell_idx})
+                        unpacked_cells = [unpacked_cells, unpack_cells(cells{cell_idx})];
+                    else
+                        unpacked_cells = [unpacked_cells, cells(cell_idx)];
+                    end
+                end
             end
+            varargin = unpack_cells(varargin);
             obj.send_command(varargin{:});
             response = obj.read_response;
         end
