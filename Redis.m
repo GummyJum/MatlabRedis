@@ -81,7 +81,11 @@ classdef Redis < handle
         
         function response = read_response(obj)
             % we have 5 possible responses first char +-:$*
-            raw = strip(obj.socket_readline);
+            socket_line = obj.socket_readline;
+            if isempty(socket_line)
+                response = '';
+            end
+            raw = strip(socket_line);
             
             if isempty(raw)
                 error('ConnectionError(SERVER_CLOSED_CONNECTION_ERROR)');
@@ -152,6 +156,7 @@ classdef Redis < handle
                 end
             end
             varargin = unpack_cells(varargin);
+            varargin(cellfun(@isempty, varargin)) = [];
             obj.send_command(varargin{:});
             response = obj.read_response;
         end
