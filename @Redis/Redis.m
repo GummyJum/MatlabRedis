@@ -9,121 +9,18 @@ classdef Redis < handle
     end
     
     properties (Access=private)
-        terminator = sprintf('\r\n')
         socket = []
+        multi_stack = []
     end
-    
-    methods (Access = private, Static)
-        function hashStr = sha1(str)
-            % Main class of interest:    System.Security.Cryptography.HashAlgorithm
-            % Create any specified cryptographic hasher.
-            % Supported string args include 'MD5', 'SHA1', 'SHA256', 'SHA384', 'SHA512'.
-            hasher = System.Security.Cryptography.HashAlgorithm.Create('SHA1');
-            
-            % Convert the char string to uint8 type & run it through the hasher
-            hash_byte = hasher.ComputeHash( uint8(str) );
-            
-            % Convert the System.Byte class to MATLAB 1xN uint8 number array by typecasting.
-            hash_uint8 = uint8( hash_byte );
-            
-            % Convert uint8 to a Nx2 char array of HEX values
-            hash_hex = dec2hex(hash_uint8);
-            
-            % FINALLY, convert the Nx2 hex char array to a 1x2N format
-            % Example Result:    '12582D...'
-            hashStr = str([]);
-            nBytes = length(hash_hex);
-            for k=1:nBytes
-                hashStr(end+1:end+2) = hash_hex(k,:);
-            end
-            hashStr = lower(hashStr);
-        end
+        
+    methods (Access=private, Static)
+        hashStr = sha1(str)
+        p = params;
     end
-    methods (Access=private)
-        
-        function send_command(obj, varargin)
-            buff = sprintf('*%d\r\n', numel(varargin));
-            redis_strings = cellfun(@(x)  to_redis_string(x), varargin, 'UniformOutput', false);
-            redis_strings(cellfun(@isempty, redis_strings)) = [];
-            args = cellfun(@(x) {[sprintf('$%d\r\n', numel(x)), x]}, redis_strings);
-            buff = [buff, strjoin(args, obj.terminator), obj.terminator];
-            obj.socket.write(uint8(buff));
-            
-            function redis_str = to_redis_string(redis_str)
-                if isstring(redis_str)
-                    redis_str = char(redis_str);
-                end
-                if isnumeric(redis_str)
-                    redis_str = num2str(redis_str);
-                end
-            end
-            
-        end
-        
-        function line = socket_readline(obj)
-            line = [];
-            total_wait = 0;
-            while total_wait < obj.timeout
-                pause(obj.read_wait);
-                while obj.socket.BytesAvailable
-                    line = [line, char(obj.socket.read(1))];
-                    if length(line) >= 2 && strcmp(line((end-1):end), obj.terminator)
-                        break
-                    end
-                end
-                if ~isempty(line)
-                    return
-                end
-                total_wait = total_wait + obj.read_wait;
-            end
-            warning('redis timeout reached without any answer');
-        end
-        
-        function response = read_response(obj)
-            % we have 5 possible responses first char +-:$*
-            socket_line = obj.socket_readline;
-            if isempty(socket_line)
-                response = '';
-                return
-            end
-            raw = strip(socket_line);
-            
-            if isempty(raw)
-                error('ConnectionError(SERVER_CLOSED_CONNECTION_ERROR)');
-            end
-            
-            prefix = raw(1);
-            response = raw(2:end);
-            
-            if all(prefix ~= '+-:$*')
-                error('InvalidResponse("Protocol Error: %s")', raw);
-            end
-            
-            if prefix == '-'
-                return
-            elseif prefix == '+'
-                % PASS
-            elseif prefix == ':'
-                % response = int64(str2double(response));
-            elseif prefix == '$'
-                len = int32(str2double(response));
-                if len == -1
-                    response = [];
-                    return
-                end
-                response = strip(char(obj.socket.read(len+2)));
-            elseif prefix == '*'
-                len = int32(str2double(response));
-                if len == -1
-                    response = [];
-                    return
-                end
-                response = cell(1, len);
-                for ind = 1:len
-                    response{ind} = obj.read_response;
-                end
-            end
-        end
+    methods (Access=private)  
+        send_command(obj, varargin)
+        line = socket_readline(obj)
+        response = read_response(obj)
     end
     
     methods
@@ -153,22 +50,8 @@ classdef Redis < handle
             end
         end
         
-        function response = cmd(obj, varargin)
-            function unpacked_cells = unpack_cells(cells)
-                unpacked_cells = [];
-                for cell_idx = 1:numel(cells)
-                    if iscell(cells{cell_idx})
-                        unpacked_cells = [unpacked_cells, unpack_cells(cells{cell_idx})];
-                    else
-                        unpacked_cells = [unpacked_cells, cells(cell_idx)];
-                    end
-                end
-            end
-            varargin = unpack_cells(varargin);
-            varargin(cellfun(@isempty, varargin)) = [];
-            obj.send_command(varargin{:});
-            response = obj.read_response;
-        end
+        response = cmd(obj, varargin)
+        
         function output = append(obj, key, value, varargin)
             % APPEND key value
             % Append a value to a key
