@@ -12,6 +12,8 @@ classdef Redis < handle
         socket = []
         multi_stack = []
         multi_counter = 0
+        read_buffer = []
+        terminator = sprintf('\r\n')
     end
         
     methods (Access=private, Static)
@@ -20,8 +22,9 @@ classdef Redis < handle
     end
     methods (Access=private)  
         send_command(obj, varargin)
-        line = socket_readline(obj)
+        res = socket_read(obj, mode)
         response = read_response(obj)
+        resp_str = command_to_resp_str(obj, varargin)
     end
     
     methods

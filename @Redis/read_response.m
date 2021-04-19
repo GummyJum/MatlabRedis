@@ -1,11 +1,11 @@
 function response = read_response(obj)
     % we have 5 possible responses first char +-:$*
-    socket_line = obj.socket_readline;
+    socket_line = obj.socket_read('line');
     if isempty(socket_line)
         response = '';
         return
     end
-    raw = strip(socket_line);
+    raw = socket_line;
 
     if isempty(raw)
         error('ConnectionError(SERVER_CLOSED_CONNECTION_ERROR)');
@@ -30,7 +30,8 @@ function response = read_response(obj)
             response = [];
             return
         end
-        response = strip(char(obj.socket.read(len+2)));
+        response = obj.socket_read(len+2);
+        response = response(1:end-numel(obj.terminator));
     elseif prefix == '*'
         len = int32(str2double(response));
         if len == -1
