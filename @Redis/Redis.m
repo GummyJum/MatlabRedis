@@ -11,6 +11,7 @@ classdef Redis < handle
     properties (Access=private)
         socket = []
         multi_stack = []
+        multi_counter = 0
     end
         
     methods (Access=private, Static)
