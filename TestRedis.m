@@ -42,6 +42,7 @@ classdef TestRedis < matlab.unittest.TestCase
             testCase.verifyEqual(v{2}, '35');
             testCase.verifyEqual(v{3}, 'v a\"\nl\ue"C');
         end
+        
         function test_multi(testCase)
             testCase.redis_connection.multi();
             testCase.redis_connection.set('x', 2);
@@ -51,6 +52,31 @@ classdef TestRedis < matlab.unittest.TestCase
             testCase.verifyEqual(Output{2}, '3');
             Output = testCase.redis_connection.incr('x');
             testCase.verifyEqual(Output, '4');
+        end
+        
+        function test_1k_list(testCase) 
+            tic;
+            n = 1000;
+            r = testCase.redis_connection;
+            r.del('tmp');
+            r.multi;
+            for ind = 1:n
+                r.rpush('tmp', ind);
+            end
+            res = r.exec;
+            testCase.verifyEqual(all(str2double(res) == 1:n), true)
+            res = r.lrange('tmp', 0, -1);
+            testCase.verifyEqual(all(str2double(res) == 1:n), true)
+            fprintf('\ntest_1k_list overall time: %f [seconds]\n', toc);
+        end
+                
+        function test_1m_str(testCase) 
+            str1m = repmat('_', 1, 1000000);
+            tic;
+            testCase.redis_connection.set('str1m', str1m);
+            res = testCase.redis_connection.get('str1m');
+            testCase.verifyEqual(str1m, res);
+            fprintf('\ntest_1m_str overall time: %f [seconds]\n', toc);
         end
     end
 end
