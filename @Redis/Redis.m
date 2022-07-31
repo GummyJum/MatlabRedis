@@ -56,6 +56,11 @@ classdef Redis < handle
         
         response = cmd(obj, varargin)
         
+        function output = get_message(obj)
+            % Get PSUB/SUB messages
+            output = obj.read_response();
+        end
+
         function output = append(obj, key, value, varargin)
             % APPEND key value
             % Append a value to a key
